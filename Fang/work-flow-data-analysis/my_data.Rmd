@@ -1,0 +1,191 @@
+---
+title: "My Data"
+author: "Ilkka Kiistala"
+date: "7 Apr 2015"
+output:
+  pdf_document:
+    number_sections: yes
+---
+
+# Baana Biker data
+
+I'm going to combine biker data collected at Baana and Helsinki weather data.
+
+## Load biker data
+
+Load biker data from Helsinki Region Infoshare:
+
+```{r, cache=TRUE}
+url <- 'http://www.hel.fi/hel2/tietokeskus/data/helsinki/ksv/Baanan_pyorailijamaarat.xlsx'
+download.file(url, destfile="bikers.xlsx")
+
+library(xlsx)
+bikers <- read.xlsx("bikers.xlsx", 1)
+```
+
+## Check biker data
+
+```{r}
+head(bikers)
+nrow(bikers)
+str(bikers)
+```
+
+## Cleanup
+
+We only need date and number of bikers.
+
+```{r}
+bikers <- bikers[, c(2,4)]
+```
+
+Let's rename the columns.
+
+```{r}
+head(bikers)
+names(bikers) <- c("date", "bikers")
+head(bikers)
+```
+
+---
+
+# Load weather data
+
+## Helsinki daily temperature observations
+
+The Finnish Meteorological Institute (FMI) is a research and service agency under the Ministry of Transport and Communications.
+
+Observations are accessible via FMI Open Data WFS service. Quering the service requires registration, which provides user with an API key.
+
+```{r eval=FALSE}
+# Example API call:
+http://data.fmi.fi/fmi-apikey/insert-your-apikey-here/wfs?request=getFeature&storedquery_id=fmi::observations::weather::daily::simple&place=helsinki
+```
+See their Open Data Manual: http://en.ilmatieteenlaitos.fi/open-data-manual-fmi-wfs-services
+
+## Pre-editing the data
+
+After fetching the data as XML, it was parsed into following form:
+
+```{r eval=FALSE}
+2013-01-01 tday 2.8
+2013-01-02 tday 2.3
+2013-01-03 tday 1.0
+2013-01-04 tday 1.6
+2013-01-05 tday -2.5
+2013-01-06 tday -4.6
+2013-01-07 tday -4.7
+2013-01-08 tday -0.1
+```
+
+## Importing the temperature data into R
+
+```{r}
+tem <- read.csv("helsinki-temperatures.tsv", sep=" ", header=FALSE, stringsAsFactors=FALSE)
+summary(tem)
+```
+Summary reveals some repeating days, so to be sure, we need to check that their data match.
+But before that, let's remove the columns with 'tday' values and name our columns.
+
+```{r}
+names(tem)
+tem[,2] <- NULL
+names(tem)
+
+names(tem) <- c("date", "tday")
+head(tem)
+```
+
+Now it's easier to refer to the columns. Let's check those repeating dates.
+
+```{r}
+date_count <- as.data.frame(table(tem$date), stringsAsFactors=FALSE)
+# subset(date_count, Freq > 1)
+# multidate <- as.vector(subset(date_count, Freq > 1, select="Var1"))
+multidate <- subset(date_count, Freq > 1, select="Var1")[,1]
+
+# tem[tem$date %in% as.vector(multidate),]
+head( tem[tem$date %in% multidate,] )
+
+```
+
+No anomalies in the pairs.
+It is safe to remove duplicates.
+
+```{r}
+nrow(tem)
+tail(tem)
+tem <- tem[!duplicated(tem),]
+nrow(tem)
+tail(tem)
+head( tem[tem$date %in% multidate,] )
+
+# This recalculates rownames
+rownames(tem) <- NULL
+tail(tem)
+```
+
+# Merging the two data frames
+
+```{r}
+nrow(bikers)
+nrow(tem)
+```
+
+Let's find out the latest dates we have in the two data sets.
+
+```{r}
+max(bikers$date)
+max(tem$date)
+
+# the earlier date is usually in the biker data, but let's play it safe
+mutually_latest_date <- min(max(bikers$date), max(tem$date))
+mutually_latest_date
+
+# check that row count matches
+nrow(subset(bikers, date <= mutually_latest_date))
+nrow(subset(tem, date <= mutually_latest_date))
+
+bikers <- subset(bikers, date <= mutually_latest_date)
+tem <- subset(tem, date <= mutually_latest_date)
+
+```
+
+Now their row counts match, so let's merge them.
+First, some values to check after merge:
+
+
+```{r}
+tail(bikers);tail(tem)
+```
+
+Merge.
+
+```{r}
+# bw as in "Bikers and Weather"
+bw <- merge(bikers, tem)
+nrow(bw)
+```
+
+The date column is of different type.
+We need to transform tem$date into Date type.
+
+```{r}
+tem$date <- as.Date(tem$date)
+bw <- merge(bikers, tem)
+nrow(bw)
+tail(bw)
+```
+
+## Add weekday data column
+
+```{r}
+bw$weekday <- format( as.Date(bw$date), "%w" )
+```
+
+# Description of columns
+
+* date: the date of the biker count / weather observations
+* bikers: number of bikers passing the electronic counter device at Baana
+* tday: average temperature of the day  
+* weekday: weekday of the day, 0=Sunday, 1=Monday  
