@@ -1,0 +1,103 @@
+---
+title: "Script example (R Markdwon)"
+author: "Pedro J. Aphalo"
+date: "30 March 2015"
+output:
+  pdf_document:
+    number_sections: yes
+    toc: yes
+---
+
+# knitr setup
+
+```{r}
+library(knitr)
+```
+
+# Data
+
+We use cork production data from package `agridat`.
+
+```{r}
+library(agridat)
+data("box.cork")
+
+summary(box.cork)
+```
+
+# Data preparation
+
+We melt from 4 columns into a single column.
+
+```{r}
+library(reshape2)
+cork.melted <- melt(box.cork, 
+                    id.vars = "tree", 
+                    variable.name = "trunk.side", 
+                    value.name = "cork.cg")
+```
+
+# EDA (exploratory data analysis)}
+
+We do exploratory plotting with `ggplot2'.
+
+```{r}
+library(ggplot2)
+```
+
+
+First you save a simple *dot plot.*
+
+```{r}
+fig.cork <- ggplot(data = cork.melted, 
+                   aes(x = trunk.side, y = cork.cg)) + 
+  geom_point()
+fig.cork
+```
+
+We add to the plot saved above *boxplots*, and also change
+the $y$ scale to logarithmic.
+
+<<>>=
+fig.cork + geom_boxplot(fill = NA)
+fig.cork + geom_boxplot(fill = NA) + scale_y_log10()
+@
+
+We add to the plot saved above \emph{violin plots}, and also change
+the $y$ scale to logarithmic.
+
+```{r}
+fig.cork + geom_violin(fill = NA)
+fig.cork + geom_violin(fill = NA) + scale_y_log10()
+```
+
+We create and save a new plot, with fitted densities to
+assess the shape of the distributions and their differences.
+
+```{r}
+fig.cork1 <- ggplot(data = cork.melted, 
+                    aes(x = cork.cg, colour = trunk.side)) + 
+  geom_density() + xlim(0, NA)
+fig.cork1
+```
+
+
+Here we use histograms instaed.
+
+```{r}
+fig.cork2 <- ggplot(data = cork.melted, aes(x = cork.cg, fill = trunk.side)) + 
+  geom_histogram(binwidth = 10) + 
+  facet_wrap(~trunk.side, ncol = 2)
+fig.cork2
+```
+
+# Test of significance
+
+We fit a linear model, calculate and ANOVA table
+and check diagnosis plots
+
+```{r}
+cork.fit <- lm(log10(cork.cg) ~ trunk.side + tree, data = cork.melted)
+anova(cork.fit)
+plot(cork.fit)
+```

@@ -1,0 +1,219 @@
+---
+title: "Plots"
+author: "Pedro J. Aphalo"
+date: "31 March 2015"
+output:
+  beamer_presentation:
+    fig_height: 4
+    fig_width: 6
+---
+
+```{r, echo=FALSE}
+library(knitr)
+opts_chunk$set(fig.align='center', size="tiny",
+               fig.width=6, fig.height=4, 
+               out.width='.75\\textwidth')
+```
+
+## Slide with R Code and Output
+
+```{r}
+summary(cars)
+```
+
+## Slide with Plot
+
+A very simple plot using example data included in R and base R plot functions
+
+```{r}
+plot(cars)
+```
+
+## ggplot2
+
+Nowadays the package most frequently used for _normal_ plotting is `ggplot2`
+
+- it is based on a grammar of graphics
+- in plain words, we assemble plots by adding different _pieces_
+- these pieces are quite modular
+- this allows making many different types of plots from not so many _pieces_
+- the basic pieces are _layers_
+- the name reflects the fact that order in which we add them is significant
+- later additions are plotted on top of the first ones
+
+## what is a ggplot object?
+
+- a `ggplot` object is independent of the output format
+- it is not purely visual, it is to a significant extent semantic
+- the size and the `theme` can be decided at the time of generating output
+- a `ggplot` can be modified by adding and sometimes replacing elements
+- a `ggplot` object can be large (in memory) because it contains a copy of the data plotted
+- this means that the `ggplot` object is self-sufficient (you can copy it to a new 'empty' R session and still generate the output)
+
+## What are the words of the grammar
+- data
+- aesthetics
+- statistics
+- scales
+- geometries
+
+## data
+- `data` tells R where to look for the variables used in the plot, data is supplied
+as a `data.frame` object
+-  _aesthetics_ (`aes`) tells how to map variables to features in the plot
+   * stablishes a connection between a variable an aesthetic _dimension_
+   * for example: `x` coordinate, `colour`, etc.
+-  _statistics_ or some operation on the data before plotting
+_  _scales_ the mapping between data values and aesthetic values
+   * e.g. is value 1 by plotted as red and value 2 with say blue, or using some other colours
+   
+## geometries
+- they are easier to describe with examples
+- `geom_line`, `geom_point`, `geom_text` 
+- each geom you add to a ggplot adds a new layer to the plot (on top of the layers added earlier)
+
+## annotations
+- they add layers that are not directly 'connected' to the data
+- e.g. a label not directly related to a single observation
+- annotations can also use different geoms and aesthetics, buy they are not inherited, they are
+selected locally to each annotation
+
+## A very simple plot
+```{r}
+library(ggplot2)
+# runif generates random numbers
+# we create a data frame to play with
+my.df <- data.frame(xx = 1:10, yy = runif(10))
+# we create a plot and save it as 'my.plot'
+my.plot <- ggplot(data = my.df, aes(x = xx, y = yy)) + 
+  geom_point()
+```
+
+## _Printing_ the plot
+```{r}
+print(my.plot)
+```
+
+## _Printing_ the plot using a different `theme`
+```{r}
+print(my.plot + theme_bw())
+```
+
+## _Printing_ the plot using a different base font size
+```{r}
+print(my.plot + theme_bw(15))
+```
+
+## What is in my.plot
+
+```{r}
+str(my.plot)
+```
+
+## A not so simple plot
+```{r}
+# runif generates random numbers
+# we create a data frame to play with
+my.2nd.df <- 
+  data.frame(xx = rep(1:10, 2), 
+             yy = runif(20), 
+             group = factor(rep(c("A", "B"), c(10, 10))) )
+# we create a plot and save it as 'my.plot'
+my.2nd.plot <- ggplot(data = my.2nd.df,
+                      aes(x = xx, y = yy, colour = group)) + 
+  geom_point()
+```
+
+## _Printing_ the plot
+```{r}
+print(my.2nd.plot)
+```
+
+
+## A not so simple plot
+```{r}
+# runif generates random numbers
+# we create a data frame to play with
+my.2nd.df <- 
+  data.frame(xx = rep(1:10, 2), 
+             yy = runif(20), 
+             group = factor(rep(c("A", "B"), c(10, 10))) )
+# we create a plot and save it as 'my.plot'
+my.3rd.plot <- ggplot(data = my.2nd.df,
+                      aes(x = xx, y = yy, shape = group)) + 
+  geom_point()
+```
+
+## _Printing_ the plot
+```{r}
+print(my.3rd.plot)
+```
+
+## A plot with two aesthetics for `group`
+```{r}
+# we create a plot and save it as 'my.plot'
+my.4th.plot <- ggplot(data = my.2nd.df,
+                      aes(x = xx, y = yy, 
+                          shape = group,
+                          colour = group)) + 
+  geom_point()
+```
+
+## _Printing_ the plot
+```{r}
+print(my.4th.plot)
+```
+
+## Replacing the default labels
+```{r}
+my.5th.plot <- my.4th.plot +
+  labs(x="Time (d)", y = "Response (a.u)", 
+       colour = "Treatment", shape = "Treatment",
+       title = "Artificial data")
+print(my.5th.plot)
+```
+
+## Adding another layer on the fly
+```{r}
+print(my.5th.plot + geom_line())
+```
+
+## Adding another layer on the fly
+```{r}
+print(my.5th.plot + geom_smooth())
+```
+
+## Another way of plotting the same data
+```{r}
+# we create a plot and save it as 'my.plot'
+my.6th.plot <- ggplot(data = my.2nd.df,
+                      aes(x = group, y = yy))
+print(my.6th.plot + geom_boxplot())
+```
+
+## Another way of plotting the same data
+```{r}
+print(my.6th.plot + geom_violin())
+```
+
+## A larger set of normally distributed data
+```{r}
+# rnorm generates random numbers
+my.3rd.df <- 
+  data.frame(yy = c(rnorm(n = 50, mean = 2), rnorm(n = 50, mean = 0)),
+             group = factor(rep(c("A", "B"), c(50, 50))) )
+my.7th.plot <- ggplot(data = my.3rd.df,
+                      aes(x = group, y = yy))
+print(my.7th.plot + geom_boxplot())
+```
+
+## The plot with a few additional layers
+
+```{r}
+print(my.7th.plot + 
+        geom_violin() +
+        geom_point(aes(colour = group)) +
+        geom_rug(aes(colour = group), 
+                 side = "l", alpha = 0.5) )
+```
+

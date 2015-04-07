@@ -1,0 +1,52 @@
+---
+title: "Import data sheet"
+author: "Fang"
+date: "Thursday, March 26, 2015"
+output: rmarkdown::tufte_handout
+---
+
+# What means importing data sheet
+
+Outside of R, one works with all types of files, most likely an exel. Before get hands into these original files, we need to read these files and create data frame (data table). After this, all the work we continue will be only done with data frames. And all original files keep virgin and you don't have worry at all any original data get lost or destroyed.
+
+## Acturally, how you do it
+
+Now we can read data.
+
+\fbox{If you have an excel file, it is more welcomed you save it in excel as .csv.}
+
+```{r}
+block1_physi_2015.data <- read.csv2("Sample.csv")
+```
+
+
+The file we have here is semicolon separated, instead of comma separated. So we use read.csv2(). Otherwise we use read.csv(). You can try to delete 2 and run read.csv("Sample.csv") and see the complain in console. 
+
+R is capital sensitive. Be careful with every letter. File name is text, that's why using "". Without "", R will try to understand it is command.
+
+Now we have block1_physi_2015.data. What type it is in environment? Check the environment window on the right side.
+
+You can always check the dataframe by this:
+````{r,eval=FALSE}
+View(block1_physi_2015.data)
+````
+
+The chunk above is only shown here but no result has been returned. Do you know why?
+
+You can click csv file on the folder viewer on the right side lower part, and compare the original data looking with the dataframe. 
+
+## Try to plot and have fun
+
+Hurrah!! Now we have our dataframe. Nothing is related with the original data any more. We play with dataframe only.
+B.T.W., if you change anything in csv file (or any original files), you have to read the original file again. Why?
+
+What do you want to do? How about... A figure?
+```{r, fig.cap="Leaf position"}
+library(ggplot2)
+explore.fig <- ggplot(block1_physi_2015.data, aes(x=leaf_position, y=dry_weight)) + geom_point()
+print(explore.fig)
+```
+
+## Now your turn
+
+exercise
